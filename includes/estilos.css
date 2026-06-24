@@ -1,0 +1,207 @@
+/* ==========================================================================
+   estilos.css
+   Central de Monitoreo para Simulaciones de Circuitos y Prototipos
+   Tema visual tipo "consola de laboratorio / monitor serie"
+   ========================================================================== */
+
+:root {
+    --fondo:            #0b1320;
+    --panel:            #121d30;
+    --panel-borde:      #1f3050;
+    --texto:            #dce6f2;
+    --texto-tenue:      #8ea0bd;
+    --acento:           #36e29a;
+    --acento-oscuro:    #1f9e6c;
+    --alerta:           #ff7a59;
+    --advertencia:      #f2c14e;
+    --fuente-mono:      "Consolas", "SFMono-Regular", Menlo, monospace;
+    --fuente-base:      "Segoe UI", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: var(--fuente-base);
+    line-height: 1.45;
+}
+
+a { color: var(--acento); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ----- Barra superior ----- */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 28px;
+    background: linear-gradient(180deg, #0e1726, #0b1320);
+    border-bottom: 1px solid var(--panel-borde);
+}
+
+.marca { display: flex; align-items: center; gap: 10px; }
+
+.led {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--acento);
+    box-shadow: 0 0 8px 2px var(--acento);
+    animation: parpadeo 2.2s infinite ease-in-out;
+}
+
+@keyframes parpadeo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+.marca-textos { display: flex; flex-direction: column; line-height: 1.1; }
+.marca-texto { font-weight: 700; letter-spacing: 1px; font-size: 15px; }
+.marca-sub { font-size: 12px; color: var(--texto-tenue); }
+
+.menu { display: flex; gap: 18px; flex-wrap: wrap; }
+.menu a {
+    color: var(--texto-tenue);
+    font-size: 14px;
+    padding: 6px 4px;
+    border-bottom: 2px solid transparent;
+}
+.menu a:hover { color: var(--texto); text-decoration: none; }
+.menu a.activo { color: var(--acento); border-bottom: 2px solid var(--acento); }
+
+/* ----- Contenedor general ----- */
+.contenedor { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-borde);
+    border-radius: 10px;
+    padding: 24px 26px;
+}
+
+.panel-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+h1 { margin: 0 0 6px; font-size: 22px; }
+h2 { font-size: 17px; color: var(--texto); margin-top: 28px; }
+.ayuda { color: var(--texto-tenue); font-size: 14px; margin: 4px 0 20px; }
+
+/* ----- Tarjetas del dashboard ----- */
+.tarjetas { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0 6px; }
+.tarjeta {
+    flex: 1;
+    min-width: 160px;
+    background: var(--fondo);
+    border: 1px solid var(--panel-borde);
+    border-radius: 8px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+}
+.tarjeta-numero { font-size: 30px; font-weight: 700; color: var(--acento); font-family: var(--fuente-mono); }
+.tarjeta-alerta .tarjeta-numero { color: var(--advertencia); }
+.tarjeta-etiqueta { font-size: 13px; color: var(--texto-tenue); margin-top: 4px; }
+
+/* ----- Tablas ----- */
+.tabla-datos { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+.tabla-datos th, .tabla-datos td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--panel-borde);
+}
+.tabla-datos th { color: var(--texto-tenue); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; }
+.tabla-datos tbody tr:hover { background: rgba(54, 226, 154, 0.05); }
+.tabla-datos .centrado { text-align: center; }
+.tabla-datos .vacio { text-align: center; color: var(--texto-tenue); padding: 28px 0; }
+
+.acciones-fila a { margin-right: 12px; font-size: 13px; }
+.enlace-peligro { color: var(--alerta) !important; }
+
+.etiqueta {
+    display: inline-block;
+    background: rgba(54, 226, 154, 0.12);
+    color: var(--acento);
+    border: 1px solid var(--acento-oscuro);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.codigo {
+    font-family: var(--fuente-mono);
+    background: var(--fondo);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--panel-borde);
+}
+
+.estado-pendiente { color: var(--advertencia); font-weight: 600; }
+.estado-resuelto { color: var(--acento); font-weight: 600; }
+
+/* ----- Formularios ----- */
+form { margin-top: 10px; }
+label { display: block; margin: 14px 0 6px; font-size: 13px; color: var(--texto-tenue); }
+input[type="text"], input[type="date"], select, textarea {
+    width: 100%;
+    background: var(--fondo);
+    border: 1px solid var(--panel-borde);
+    color: var(--texto);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: var(--fuente-base);
+}
+textarea { resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--acento); }
+
+.acciones { margin-top: 22px; display: flex; gap: 10px; }
+
+.boton {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+.boton-primario { background: var(--acento); color: #06251a; }
+.boton-primario:hover { background: var(--acento-oscuro); text-decoration: none; }
+.boton-secundario { background: transparent; color: var(--texto); border-color: var(--panel-borde); }
+.boton-secundario:hover { border-color: var(--texto-tenue); text-decoration: none; }
+
+/* ----- Alertas ----- */
+.alerta { padding: 12px 16px; border-radius: 6px; margin-bottom: 18px; font-size: 14px; }
+.alerta-ok { background: rgba(54, 226, 154, 0.1); border: 1px solid var(--acento-oscuro); color: var(--acento); }
+.alerta-error { background: rgba(255, 122, 89, 0.1); border: 1px solid var(--alerta); color: var(--alerta); }
+.alerta-error ul { margin: 8px 0 0 18px; padding: 0; }
+
+/* ----- Consola del instalador ----- */
+.consola {
+    background: #060b14;
+    border: 1px solid var(--panel-borde);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--fuente-mono);
+    font-size: 13px;
+    color: var(--acento);
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+footer.piefoot {
+    text-align: center;
+    color: var(--texto-tenue);
+    font-size: 12.5px;
+    padding: 30px 20px;
+}

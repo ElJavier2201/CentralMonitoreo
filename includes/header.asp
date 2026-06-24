@@ -1,0 +1,38 @@
+<%
+Dim titulo, seccion
+If tituloPagina = "" Then
+    titulo = "Central de Monitoreo de Circuitos"
+Else
+    titulo = tituloPagina
+End If
+If seccionActiva = "" Then
+    seccion = ""
+Else
+    seccion = seccionActiva
+End If
+%>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><%= titulo %></title>
+<link rel="stylesheet" href="<%= rutaBase %>includes/estilos.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="marca">
+        <span class="led"></span>
+        <div class="marca-textos">
+            <span class="marca-texto">CENTRAL DE MONITOREO</span>
+            <span class="marca-sub">Simulaciones &amp; Prototipos</span>
+        </div>
+    </div>
+    <nav class="menu">
+        <a href="<%= rutaBase %>index.asp" class="<%= ClaseSiActivo(seccion, "dashboard") %>">Dashboard</a>
+        <a href="<%= rutaBase %>proyectos/listar.asp" class="<%= ClaseSiActivo(seccion, "proyectos") %>">Proyectos</a>
+        <a href="<%= rutaBase %>componentes/listar.asp" class="<%= ClaseSiActivo(seccion, "componentes") %>">Componentes</a>
+        <a href="<%= rutaBase %>fallos/listar.asp" class="<%= ClaseSiActivo(seccion, "fallos") %>">Bitácora de Fallos</a>
+    </nav>
+</header>
+<main class="contenedor">

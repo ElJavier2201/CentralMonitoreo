@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Iniciar IIS Express (Central de Monitoreo)",
+      "type": "shell",
+      "windows": {
+        //"command": "\"C:\\Program Files\\IIS Express\\iisexpress.exe\" /path:\"CentralMonitoreo\" /port:8186"
+        "command" : "\"C:\\Program Files\\IIS Express\\iisexpress.exe\" /path:\"C:\\CentralMonitoreo\\CentralMonitoreo\" /port:8181"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}
