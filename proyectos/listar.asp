@@ -68,6 +68,7 @@ Set objRS = objConn.Execute(sql)
                 <a href="../fallos/listar.asp?proyecto=<%= objRS("ID_Proyecto") %>"><%= objRS("TotalFallos") %></a>
             </td>
             <td class="acciones-fila">
+                <a href="imprimir_plano.asp?id=<%= objRS("ID_Proyecto") %>" target="_blank">Imprimir</a>
                 <a href="formulario.asp?id=<%= objRS("ID_Proyecto") %>">Editar</a>
                 <a href="eliminar.asp?id=<%= objRS("ID_Proyecto") %>" class="enlace-peligro"
                    onclick="return confirm('¿Eliminar este proyecto y todos sus componentes y fallos asociados?');">Eliminar</a>
