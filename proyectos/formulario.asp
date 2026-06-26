@@ -45,39 +45,61 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
     If plataforma = "" Then errores = errores & "<li>Debe indicar la plataforma de simulación (Proteus, Tinkercad, etc.).</li>"
     If microcontrolador = "" Then errores = errores & "<li>Debe indicar el microcontrolador / cerebro del circuito.</li>"
 
+ 
     If errores = "" Then
 
         Set objConn = AbrirConexion()
+        
+        ' 1. Declaramos y configuramos el objeto Command
+        Dim objCmd
+        Set objCmd = Server.CreateObject("ADODB.Command")
+        objCmd.ActiveConnection = objConn
+        objCmd.CommandType = 1 ' adCmdText (indica que es una consulta SQL de texto)
 
         If modoEdicion Then
-            sql = "UPDATE Proyectos SET " & _
-                  "Nombre_Proyecto = " & ValorTextoSQL(nombreProyecto) & ", " & _
-                  "Plataforma_Simulacion = " & ValorTextoSQL(plataforma) & ", " & _
-                  "Microcontrolador = " & ValorTextoSQL(microcontrolador) & ", " & _
-                  "Descripcion = " & ValorTextoSQL(descripcion) & ", " & _
-                  "Fecha_Creacion = " & FechaSQL(fechaCreacion) & " " & _
-                  "WHERE ID_Proyecto = " & idProyecto
+            ' 2. Escribimos la consulta usando signos de interrogación (?) como comodines
+            objCmd.CommandText = "UPDATE Proyectos SET Nombre_Proyecto = ?, Plataforma_Simulacion = ?, Microcontrolador = ?, Descripcion = ?, Fecha_Creacion = ? WHERE ID_Proyecto = ?"
+            
+            ' 3. Pasamos los valores en el MISMO ORDEN en que aparecen los signos de interrogación (?)
+            ' Sintaxis de CreateParameter: (Nombre, TipoDato, Direccion, Tamaño, Valor)
+            ' Tipos: 200=VarChar(Texto), 135=DBTimeStamp(Fecha/Hora), 3=Integer(Número Entero)
+            objCmd.Parameters.Append objCmd.CreateParameter("@nombre", 200, 1, 150, nombreProyecto)
+            objCmd.Parameters.Append objCmd.CreateParameter("@plataforma", 200, 1, 80, plataforma)
+            objCmd.Parameters.Append objCmd.CreateParameter("@micro", 200, 1, 80, microcontrolador)
+            ' Para la descripción, si está vacía, forzamos que pase Null explícitamente a la BD
+            If descripcion = "" Then
+                objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, Null)
+            Else
+                objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, descripcion)
+            End If
+            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , fechaCreacion)
+            objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idProyecto)
         Else
-            sql = "INSERT INTO Proyectos " & _
-                  "(Nombre_Proyecto, Plataforma_Simulacion, Microcontrolador, Descripcion, Fecha_Creacion) " & _
-                  "VALUES (" & _
-                  ValorTextoSQL(nombreProyecto) & ", " & _
-                  ValorTextoSQL(plataforma) & ", " & _
-                  ValorTextoSQL(microcontrolador) & ", " & _
-                  ValorTextoSQL(descripcion) & ", " & _
-                  FechaSQL(fechaCreacion) & ")"
+            ' Mismo proceso para la inserción
+            objCmd.CommandText = "INSERT INTO Proyectos (Nombre_Proyecto, Plataforma_Simulacion, Microcontrolador, Descripcion, Fecha_Creacion) VALUES (?, ?, ?, ?, ?)"
+            
+            objCmd.Parameters.Append objCmd.CreateParameter("@nombre", 200, 1, 150, nombreProyecto)
+            objCmd.Parameters.Append objCmd.CreateParameter("@plataforma", 200, 1, 80, plataforma)
+            objCmd.Parameters.Append objCmd.CreateParameter("@micro", 200, 1, 80, microcontrolador)
+            If descripcion = "" Then
+                objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, Null)
+            Else
+                objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, descripcion)
+            End If
+            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , fechaCreacion)
         End If
 
-        ' adCmdText (1) + adExecuteNoRecords (128) = 129: ejecuta el DML
-        ' directamente sobre la conexión sin generar un Recordset en memoria
-        objConn.Execute sql, , 129
-
+        ' 4. Ejecutamos el comando sin generar Recordset para ahorrar memoria (128 = adExecuteNoRecords)
+        objCmd.Execute , , 128
+        
+        ' 5. Limpiamos la memoria
+        Set objCmd = Nothing
         CerrarConexion objConn
 
         Response.Redirect "listar.asp?ok=1"
         Response.End
     End If
-End If
+End If     
 
 ' ===================================================================
 ' CARGA DE DATOS EXISTENTES (modo edición, primer GET)

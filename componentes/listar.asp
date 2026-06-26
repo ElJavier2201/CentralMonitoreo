@@ -44,6 +44,32 @@ sql = sql & clausulaWhere & "ORDER BY p.Nombre_Proyecto, c.Tipo_Componente"
 
 Set objRS = objConn.Execute(sql)
 
+' --- VARIABLES PARA PAGINACIÓN ---
+Dim tamanoPagina, paginaActual, totalPaginas, registrosMostrados
+tamanoPagina = 20 ' Cantidad de componentes a mostrar por página
+paginaActual = IDValido(Request.QueryString("p"))
+If paginaActual < 1 Then paginaActual = 1
+
+' --- APERTURA DEL RECORDSET PREPARADO PARA PAGINACIÓN ---
+Set objRS = Server.CreateObject("ADODB.Recordset")
+objRS.CursorLocation = 3 ' adUseClient (Necesario para contar páginas)
+' Abrimos: (Consulta, Conexión, adOpenStatic = 3, adLockReadOnly = 1)
+objRS.Open sql, objConn, 3, 1 
+
+' --- CÁLCULO DE PÁGINAS ---
+If Not objRS.EOF Then
+    objRS.PageSize = tamanoPagina
+    totalPaginas = objRS.PageCount
+    
+    ' Seguridad: Si piden una página mayor a la existente, ir a la última
+    If paginaActual > totalPaginas Then paginaActual = totalPaginas
+    
+    ' Posicionamos el cursor en la página solicitada
+    objRS.AbsolutePage = paginaActual
+Else
+    totalPaginas = 0
+End If
+
 If filtroProyecto > 0 Then
     Dim objRSNombre
     Set objRSNombre = objConn.Execute("SELECT Nombre_Proyecto FROM Proyectos WHERE ID_Proyecto = " & filtroProyecto)
@@ -56,7 +82,7 @@ End If
     <div class="panel-cabecera">
         <h1>Componentes &amp; mapa de cableado</h1>
         <a href="formulario.asp<% If filtroProyecto > 0 Then %>?proyecto=<%= filtroProyecto %><% End If %>" class="boton boton-primario">+ Nuevo componente</a>
-        
+        <a href="exportar_csv.asp?proyecto=<%= filtroProyecto %>&q=<%= Server.URLEncode(terminoBusqueda) %>" class="boton boton-secundario">Exportar a Excel (CSV)</a>
         <form method="get" action="listar.asp" style="display:flex; gap:10px; margin-bottom:20px;">
             <input type="text" name="q" placeholder="Buscar componente o valor (Ej: Resistencia, 10k)..." value="<%= Server.HTMLEncode(terminoBusqueda) %>" style="flex:1;">
             <button type="submit" class="boton boton-primario">Buscar en Inventario</button>
@@ -97,8 +123,12 @@ End If
                 <tr>
                     <td colspan="6" class="vacio">No hay componentes registrados.</td>
                 </tr>
+            
             <% Else %>
-                <% Do While Not objRS.EOF %>
+                <% 
+                registrosMostrados = 0
+                Do While Not objRS.EOF And registrosMostrados < tamanoPagina 
+                %>
                     <tr>
                         <td><%= Server.HTMLEncode(objRS("Nombre_Proyecto")) %></td>
                         <td><%= Server.HTMLEncode(objRS("Tipo_Componente")) %></td>
@@ -111,13 +141,32 @@ End If
                         </td>
                     </tr>
                 <% 
+                    registrosMostrados = registrosMostrados + 1
                     objRS.MoveNext 
                 Loop 
                 %>
             <% End If %>
         </tbody>
     </table>
-</div>
+
+    <% If totalPaginas > 1 Then %>
+        <div style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+            <% If paginaActual > 1 Then %>
+                <a href="listar.asp?p=<%= paginaActual - 1 %><% If filtroProyecto > 0 Then %>&proyecto=<%= filtroProyecto %><% End If %><% If terminoBusqueda <> "" Then %>&q=<%= Server.URLEncode(terminoBusqueda) %><% End If %>" class="boton boton-secundario">&laquo; Anterior</a>
+            <% End If %>
+            
+            <span style="color: var(--texto-tenue); font-size: 14px;">
+                Página <%= paginaActual %> de <%= totalPaginas %>
+            </span>
+            
+            <% If paginaActual < totalPaginas Then %>
+                <a href="listar.asp?p=<%= paginaActual + 1 %><% If filtroProyecto > 0 Then %>&proyecto=<%= filtroProyecto %><% End If %><% If terminoBusqueda <> "" Then %>&q=<%= Server.URLEncode(terminoBusqueda) %><% End If %>" class="boton boton-secundario">Siguiente &raquo;</a>
+            <% End If %>
+        </div>
+    <% End If %>
+
+</div>    
+
 
 <% 
 objRS.Close 

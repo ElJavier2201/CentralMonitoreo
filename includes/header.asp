@@ -10,6 +10,13 @@ If seccionActiva = "" Then
 Else
     seccion = seccionActiva
 End If
+
+If Session("Autenticado") <> True Then
+    ' Usamos rutaBase para que redirija bien sin importar 
+    ' si estamos en la raíz o dentro de /proyectos/
+    Response.Redirect rutaBase & "login.asp"
+    Response.End
+End If
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -33,6 +40,7 @@ End If
         <a href="<%= rutaBase %>proyectos/listar.asp" class="<%= ClaseSiActivo(seccion, "proyectos") %>">Proyectos</a>
         <a href="<%= rutaBase %>componentes/listar.asp" class="<%= ClaseSiActivo(seccion, "componentes") %>">Componentes</a>
         <a href="<%= rutaBase %>fallos/listar.asp" class="<%= ClaseSiActivo(seccion, "fallos") %>">Bitácora de Fallos</a>
+        <a href="<%= rutaBase %>logout.asp" style="color: var(--alerta); margin-left: 15px;">Salir</a>
     </nav>
 </header>
 <main class="contenedor">
