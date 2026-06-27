@@ -2,32 +2,29 @@
 <%
 Option Explicit
 Response.CharSet = "UTF-8"
+
+Dim rutaBase, tituloPagina, seccionActiva
+rutaBase = "../"
+seccionActiva = "proyectos"
 %>
+<!--#include virtual="/includes/auth.asp"-->
 <!--#include virtual="/conexion.asp"-->
 <%
 Dim objConn, objRS, sql
 Dim idProyecto, modoEdicion
 Dim nombreProyecto, plataforma, microcontrolador, descripcion, fechaCreacion
 Dim errores
-Dim rutaBase, tituloPagina, seccionActiva
 
-rutaBase = "../"
-seccionActiva = "proyectos"
 errores = ""
-
 idProyecto = IDValido(Request.QueryString("id"))
 modoEdicion = (idProyecto > 0)
 
-' Valores por defecto del formulario
 nombreProyecto   = ""
 plataforma       = ""
 microcontrolador = ""
 descripcion      = ""
 fechaCreacion    = Date()
 
-' ===================================================================
-' PROCESAMIENTO DEL FORMULARIO (POST) - validación + SQL nativo
-' ===================================================================
 If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
 
     nombreProyecto   = Limpiar(Request.Form("nombre_proyecto"))
@@ -40,44 +37,32 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
 
     If Not IsDate(fechaCreacion) Then fechaCreacion = Date()
 
-    ' --- Validación: ningún campo obligatorio puede llegar vacío ---
     If nombreProyecto = "" Then errores = errores & "<li>El nombre del proyecto es obligatorio.</li>"
     If plataforma = "" Then errores = errores & "<li>Debe indicar la plataforma de simulación (Proteus, Tinkercad, etc.).</li>"
     If microcontrolador = "" Then errores = errores & "<li>Debe indicar el microcontrolador / cerebro del circuito.</li>"
 
- 
     If errores = "" Then
-
         Set objConn = AbrirConexion()
-        
-        ' 1. Declaramos y configuramos el objeto Command
+
         Dim objCmd
         Set objCmd = Server.CreateObject("ADODB.Command")
         objCmd.ActiveConnection = objConn
-        objCmd.CommandType = 1 ' adCmdText (indica que es una consulta SQL de texto)
+        objCmd.CommandType = 1
 
         If modoEdicion Then
-            ' 2. Escribimos la consulta usando signos de interrogación (?) como comodines
             objCmd.CommandText = "UPDATE Proyectos SET Nombre_Proyecto = ?, Plataforma_Simulacion = ?, Microcontrolador = ?, Descripcion = ?, Fecha_Creacion = ? WHERE ID_Proyecto = ?"
-            
-            ' 3. Pasamos los valores en el MISMO ORDEN en que aparecen los signos de interrogación (?)
-            ' Sintaxis de CreateParameter: (Nombre, TipoDato, Direccion, Tamaño, Valor)
-            ' Tipos: 200=VarChar(Texto), 135=DBTimeStamp(Fecha/Hora), 3=Integer(Número Entero)
             objCmd.Parameters.Append objCmd.CreateParameter("@nombre", 200, 1, 150, nombreProyecto)
             objCmd.Parameters.Append objCmd.CreateParameter("@plataforma", 200, 1, 80, plataforma)
             objCmd.Parameters.Append objCmd.CreateParameter("@micro", 200, 1, 80, microcontrolador)
-            ' Para la descripción, si está vacía, forzamos que pase Null explícitamente a la BD
             If descripcion = "" Then
                 objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, Null)
             Else
                 objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, descripcion)
             End If
-            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , fechaCreacion)
+            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , CDate(fechaCreacion))
             objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idProyecto)
         Else
-            ' Mismo proceso para la inserción
             objCmd.CommandText = "INSERT INTO Proyectos (Nombre_Proyecto, Plataforma_Simulacion, Microcontrolador, Descripcion, Fecha_Creacion) VALUES (?, ?, ?, ?, ?)"
-            
             objCmd.Parameters.Append objCmd.CreateParameter("@nombre", 200, 1, 150, nombreProyecto)
             objCmd.Parameters.Append objCmd.CreateParameter("@plataforma", 200, 1, 80, plataforma)
             objCmd.Parameters.Append objCmd.CreateParameter("@micro", 200, 1, 80, microcontrolador)
@@ -86,31 +71,28 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
             Else
                 objCmd.Parameters.Append objCmd.CreateParameter("@desc", 200, 1, 255, descripcion)
             End If
-            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , fechaCreacion)
+            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , CDate(fechaCreacion))
         End If
 
-        ' 4. Ejecutamos el comando sin generar Recordset para ahorrar memoria (128 = adExecuteNoRecords)
         objCmd.Execute , , 128
-        
-        ' 5. Limpiamos la memoria
         Set objCmd = Nothing
         CerrarConexion objConn
 
         Response.Redirect "listar.asp?ok=1"
         Response.End
     End If
-End If     
+End If
 
-' ===================================================================
-' CARGA DE DATOS EXISTENTES (modo edición, primer GET)
-' ===================================================================
 If modoEdicion And Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
-
     Set objConn = AbrirConexion()
-    sql = "SELECT ID_Proyecto, Nombre_Proyecto, Plataforma_Simulacion, Microcontrolador, Descripcion, Fecha_Creacion " & _
-          "FROM Proyectos WHERE ID_Proyecto = " & idProyecto
 
-    Set objRS = objConn.Execute(sql)
+    Dim cmdProyecto
+    Set cmdProyecto = Server.CreateObject("ADODB.Command")
+    cmdProyecto.ActiveConnection = objConn
+    cmdProyecto.CommandType = 1
+    cmdProyecto.CommandText = "SELECT ID_Proyecto, Nombre_Proyecto, Plataforma_Simulacion, Microcontrolador, Descripcion, Fecha_Creacion FROM Proyectos WHERE ID_Proyecto = ?"
+    cmdProyecto.Parameters.Append cmdProyecto.CreateParameter("@id", 3, 1, , idProyecto)
+    Set objRS = cmdProyecto.Execute
 
     If Not objRS.EOF Then
         nombreProyecto   = Limpiar(objRS("Nombre_Proyecto"))
@@ -125,6 +107,7 @@ If modoEdicion And Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
 
     objRS.Close
     Set objRS = Nothing
+    Set cmdProyecto = Nothing
     CerrarConexion objConn
 End If
 

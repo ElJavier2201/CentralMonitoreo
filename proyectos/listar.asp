@@ -1,13 +1,17 @@
-
-%>
-<!--#include virtual="/conexion.asp"-->
+<%@ LANGUAGE="VBSCRIPT" CODEPAGE="65001"%>
 <%
-Dim objConn, objRS, sql
-Dim rutaBase, tituloPagina, seccionActiva
+Option Explicit
+Response.CharSet = "UTF-8"
 
+Dim rutaBase, tituloPagina, seccionActiva
 rutaBase = "../"
 seccionActiva = "proyectos"
 tituloPagina = "Proyectos - Central de Monitoreo"
+%>
+<!--#include virtual="/includes/auth.asp"-->
+<!--#include virtual="/conexion.asp"-->
+<%
+Dim objConn, objRS, sql
 
 Set objConn = AbrirConexion()
 
@@ -34,6 +38,9 @@ Set objRS = objConn.Execute(sql)
     <% If Request.QueryString("eliminado") = "1" Then %>
         <div class="alerta alerta-ok">Proyecto eliminado junto con sus componentes y fallos asociados.</div>
     <% End If %>
+    <% If Request.QueryString("error") = "borrado_fallido" Then %>
+        <div class="alerta alerta-error">No se pudo eliminar el proyecto.</div>
+    <% End If %>
 
     <table class="tabla-datos">
         <thead>
@@ -48,12 +55,9 @@ Set objRS = objConn.Execute(sql)
         </tr>
         </thead>
         <tbody>
-        <%
-        If objRS.EOF Then
-        %>
+        <% If objRS.EOF Then %>
         <tr><td colspan="7" class="vacio">Aún no hay proyectos registrados.</td></tr>
-        <%
-        Else
+        <% Else
             Do While Not objRS.EOF
         %>
         <tr>
@@ -70,8 +74,10 @@ Set objRS = objConn.Execute(sql)
             <td class="acciones-fila">
                 <a href="imprimir_plano.asp?id=<%= objRS("ID_Proyecto") %>" target="_blank">Imprimir</a>
                 <a href="formulario.asp?id=<%= objRS("ID_Proyecto") %>">Editar</a>
-                <a href="eliminar.asp?id=<%= objRS("ID_Proyecto") %>" class="enlace-peligro"
-                   onclick="return confirm('¿Eliminar este proyecto y todos sus componentes y fallos asociados?');">Eliminar</a>
+                <form method="post" action="eliminar.asp" class="form-eliminar" onsubmit="return confirm('¿Eliminar este proyecto y todos sus componentes y fallos asociados?');">
+                    <input type="hidden" name="id_proyecto" value="<%= objRS("ID_Proyecto") %>">
+                    <button type="submit" class="boton-enlace enlace-peligro">Eliminar</button>
+                </form>
             </td>
         </tr>
         <%

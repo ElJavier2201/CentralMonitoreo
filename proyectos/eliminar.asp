@@ -2,58 +2,65 @@
 <%
 Option Explicit
 Response.CharSet = "UTF-8"
-%>
-<%
-Dim idProyecto, objConn, sql
-Dim exitoBorrado
 
-idProyecto = IDValido(Request.QueryString("id"))
+Dim rutaBase
+rutaBase = "../"
+%>
+<!--#include virtual="/includes/auth.asp"-->
+<!--#include virtual="/conexion.asp"-->
+<%
+Dim idProyecto, objConn, objCmd, exitoBorrado
 exitoBorrado = False
+
+If Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
+    Response.Redirect "listar.asp"
+    Response.End
+End If
+
+idProyecto = IDValido(Request.Form("id_proyecto"))
 
 If idProyecto > 0 Then
     Set objConn = AbrirConexion()
 
-    ' 1. Desactivamos la interrupción automática por errores para manejarlos manualmente
     On Error Resume Next
-    
-    ' 2. Iniciamos la transacción
     objConn.BeginTrans
 
-    ' 3. Ejecutamos los borrados en cascada explícitos
-    sql = "DELETE FROM Bitacora_Fallos WHERE ID_Proyecto = " & idProyecto
-    objConn.Execute sql, , 129
+    Set objCmd = Server.CreateObject("ADODB.Command")
+    objCmd.ActiveConnection = objConn
+    objCmd.CommandType = 1
 
-    sql = "DELETE FROM Componentes WHERE ID_Proyecto = " & idProyecto
-    objConn.Execute sql, , 129
+    objCmd.CommandText = "DELETE FROM Bitacora_Fallos WHERE ID_Proyecto = ?"
+    objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idProyecto)
+    objCmd.Execute , , 128
 
-    sql = "DELETE FROM Proyectos WHERE ID_Proyecto = " & idProyecto
-    objConn.Execute sql, , 129
+    objCmd.Parameters.Delete 0
+    objCmd.CommandText = "DELETE FROM Componentes WHERE ID_Proyecto = ?"
+    objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idProyecto)
+    objCmd.Execute , , 128
 
-    ' 4. Evaluamos si ocurrió algún error en cualquiera de los pasos anteriores
+    objCmd.Parameters.Delete 0
+    objCmd.CommandText = "DELETE FROM Proyectos WHERE ID_Proyecto = ?"
+    objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idProyecto)
+    objCmd.Execute , , 128
+
     If Err.Number <> 0 Then
-        ' Ocurrió un error: cancelamos la transacción y restauramos los datos
         objConn.RollbackTrans
-        Err.Clear ' Limpiamos el objeto de error
+        Err.Clear
     Else
-        ' No hubo errores: confirmamos los cambios de forma definitiva
         objConn.CommitTrans
         exitoBorrado = True
     End If
-    
-    ' 5. Restauramos el comportamiento normal de errores de VBScript
-    On Error Goto 0
 
+    On Error Goto 0
+    Set objCmd = Nothing
     CerrarConexion objConn
 End If
 
-' 6. Redirigimos según el resultado
 If exitoBorrado Then
     Response.Redirect "listar.asp?eliminado=1"
 ElseIf idProyecto > 0 Then
-    ' Si se intentó borrar pero la transacción falló, enviamos una bandera de error
     Response.Redirect "listar.asp?error=borrado_fallido"
 Else
-    ' Si entró sin un ID válido
     Response.Redirect "listar.asp"
 End If
 %>

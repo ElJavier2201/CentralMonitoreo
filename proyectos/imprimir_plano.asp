@@ -1,9 +1,16 @@
 <%@ LANGUAGE="VBSCRIPT" CODEPAGE="65001"%>
-<% Option Explicit 
-Response.CharSet = "UTF-8"
-%>
 <%
-Dim objConn, objRS, sql, idProyecto, nombreProyecto, micro
+Option Explicit
+Response.CharSet = "UTF-8"
+
+Dim rutaBase
+rutaBase = "../"
+%>
+<!--#include virtual="/includes/auth.asp"-->
+<!--#include virtual="/conexion.asp"-->
+<%
+Dim objConn, objRS, idProyecto, nombreProyecto, micro
+Dim cmdProyecto, cmdComponentes
 
 idProyecto = IDValido(Request.QueryString("id"))
 
@@ -14,21 +21,34 @@ End If
 
 Set objConn = AbrirConexion()
 
-' Extraemos primero la cabecera del proyecto
-sql = "SELECT Nombre_Proyecto, Microcontrolador FROM Proyectos WHERE ID_Proyecto = " & idProyecto
-Set objRS = objConn.Execute(sql)
+Set cmdProyecto = Server.CreateObject("ADODB.Command")
+cmdProyecto.ActiveConnection = objConn
+cmdProyecto.CommandType = 1
+cmdProyecto.CommandText = "SELECT Nombre_Proyecto, Microcontrolador FROM Proyectos WHERE ID_Proyecto = ?"
+cmdProyecto.Parameters.Append cmdProyecto.CreateParameter("@id", 3, 1, , idProyecto)
+Set objRS = cmdProyecto.Execute
+
 If objRS.EOF Then
+    objRS.Close
+    Set objRS = Nothing
+    Set cmdProyecto = Nothing
+    CerrarConexion objConn
     Response.Write "Proyecto no encontrado."
     Response.End
 End If
+
 nombreProyecto = objRS("Nombre_Proyecto")
 micro = objRS("Microcontrolador")
 objRS.Close
+Set objRS = Nothing
+Set cmdProyecto = Nothing
 
-' Ahora extraemos el listado de componentes
-sql = "SELECT Tipo_Componente, Valor_Calculado, Pin_Conexion, Ubicacion_Protoboard, Notas " & _
-      "FROM Componentes WHERE ID_Proyecto = " & idProyecto & " ORDER BY Tipo_Componente"
-Set objRS = objConn.Execute(sql)
+Set cmdComponentes = Server.CreateObject("ADODB.Command")
+cmdComponentes.ActiveConnection = objConn
+cmdComponentes.CommandType = 1
+cmdComponentes.CommandText = "SELECT Tipo_Componente, Valor_Calculado, Pin_Conexion, Ubicacion_Protoboard, Notas FROM Componentes WHERE ID_Proyecto = ? ORDER BY Tipo_Componente"
+cmdComponentes.Parameters.Append cmdComponentes.CreateParameter("@id", 3, 1, , idProyecto)
+Set objRS = cmdComponentes.Execute
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -36,7 +56,6 @@ Set objRS = objConn.Execute(sql)
     <meta charset="UTF-8">
     <title>Plano de Armado - <%= Server.HTMLEncode(nombreProyecto) %></title>
     <style>
-        /* CSS Minimalista pensado exclusivamente para hojas en blanco y negro */
         body { font-family: "Segoe UI", Arial, sans-serif; color: #000; background: #fff; padding: 20px; }
         h1 { font-size: 24px; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 5px;}
         h3 { font-size: 16px; color: #333; margin-top: 0; }
@@ -44,15 +63,10 @@ Set objRS = objConn.Execute(sql)
         th, td { border: 1px solid #000; padding: 10px; text-align: left; }
         th { background: #eee; text-transform: uppercase; }
         .pin { font-family: "Consolas", monospace; font-weight: bold; }
-        
-        /* Ocultar botones al momento de imprimir físicamente */
-        @media print {
-            .no-imprimir { display: none !important; }
-        }
+        @media print { .no-imprimir { display: none !important; } }
     </style>
 </head>
 <body>
-    
     <div class="no-imprimir" style="margin-bottom: 20px;">
         <button onclick="window.print()" style="padding: 10px 15px; font-weight: bold; cursor:pointer;">🖨️ Imprimir Plano</button>
         <button onclick="window.close()" style="padding: 10px 15px; cursor:pointer;">Cerrar</button>
@@ -71,16 +85,21 @@ Set objRS = objConn.Execute(sql)
             </tr>
         </thead>
         <tbody>
-            <% Do While Not objRS.EOF %>
+            <% If objRS.EOF Then %>
+            <tr><td colspan="4">No hay componentes registrados.</td></tr>
+            <% Else
+                Do While Not objRS.EOF
+            %>
             <tr>
                 <td><%= Server.HTMLEncode(objRS("Tipo_Componente")) %></td>
                 <td><%= Server.HTMLEncode(objRS("Valor_Calculado")) %></td>
                 <td class="pin"><%= Server.HTMLEncode(objRS("Pin_Conexion")) %></td>
                 <td><%= Server.HTMLEncode(objRS("Ubicacion_Protoboard")) %></td>
             </tr>
-            <% 
-                objRS.MoveNext
-            Loop 
+            <%
+                    objRS.MoveNext
+                Loop
+            End If
             %>
         </tbody>
     </table>
@@ -90,14 +109,13 @@ Set objRS = objConn.Execute(sql)
     </p>
 
     <script>
-        window.onload = function() {
-            window.print();
-        }
+        window.onload = function() { window.print(); }
     </script>
 </body>
 </html>
 <%
 objRS.Close
 Set objRS = Nothing
+Set cmdComponentes = Nothing
 CerrarConexion objConn
 %>

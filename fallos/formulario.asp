@@ -2,19 +2,20 @@
 <%
 Option Explicit
 Response.CharSet = "UTF-8"
+
+Dim rutaBase, tituloPagina, seccionActiva
+rutaBase = "../"
+seccionActiva = "fallos"
 %>
+<!--#include virtual="/includes/auth.asp"-->
 <!--#include virtual="/conexion.asp"-->
 <%
 Dim objConn, objRS, sql
 Dim idFallo, modoEdicion
 Dim idProyectoSel, sintomaError, solucionAplicada, estadoFallo, fechaRegistro
 Dim errores
-Dim rutaBase, tituloPagina, seccionActiva
 
-rutaBase = "../"
-seccionActiva = "fallos"
 errores = ""
-
 idFallo = IDValido(Request.QueryString("id"))
 modoEdicion = (idFallo > 0)
 
@@ -24,9 +25,6 @@ solucionAplicada = ""
 estadoFallo      = "Pendiente"
 fechaRegistro    = Date()
 
-' ===================================================================
-' PROCESAMIENTO DEL FORMULARIO (POST) - validación + SQL nativo
-' ===================================================================
 If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
 
     idFallo          = IDValido(Request.Form("id_fallo"))
@@ -44,28 +42,32 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
     If sintomaError = "" Then errores = errores & "<li>Debe describir el síntoma del error.</li>"
 
     If errores = "" Then
-
         Set objConn = AbrirConexion()
 
+        Dim objCmd
+        Set objCmd = Server.CreateObject("ADODB.Command")
+        objCmd.ActiveConnection = objConn
+        objCmd.CommandType = 1
+
         If modoEdicion Then
-            sql = "UPDATE Bitacora_Fallos SET " & _
-                  "ID_Proyecto = " & idProyectoSel & ", " & _
-                  "Fecha_Registro = " & FechaSQL(fechaRegistro) & ", " & _
-                  "Sintoma_Error = " & ValorTextoSQL(sintomaError) & ", " & _
-                  "Solucion_Aplicada = " & ValorTextoSQL(solucionAplicada) & ", " & _
-                  "Estado = " & ValorTextoSQL(estadoFallo) & " " & _
-                  "WHERE ID_Fallo = " & idFallo
+            objCmd.CommandText = "UPDATE Bitacora_Fallos SET ID_Proyecto = ?, Fecha_Registro = ?, Sintoma_Error = ?, Solucion_Aplicada = ?, Estado = ? WHERE ID_Fallo = ?"
+            objCmd.Parameters.Append objCmd.CreateParameter("@id_proyecto", 3, 1, , idProyectoSel)
+            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , CDate(fechaRegistro))
+            objCmd.Parameters.Append objCmd.CreateParameter("@sintoma", 200, 1, 255, sintomaError)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@solucion", solucionAplicada, 255)
+            objCmd.Parameters.Append objCmd.CreateParameter("@estado", 200, 1, 20, estadoFallo)
+            objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idFallo)
         Else
-            sql = "INSERT INTO Bitacora_Fallos " & _
-                  "(ID_Proyecto, Fecha_Registro, Sintoma_Error, Solucion_Aplicada, Estado) " & _
-                  "VALUES (" & idProyectoSel & ", " & _
-                  FechaSQL(fechaRegistro) & ", " & _
-                  ValorTextoSQL(sintomaError) & ", " & _
-                  ValorTextoSQL(solucionAplicada) & ", " & _
-                  ValorTextoSQL(estadoFallo) & ")"
+            objCmd.CommandText = "INSERT INTO Bitacora_Fallos (ID_Proyecto, Fecha_Registro, Sintoma_Error, Solucion_Aplicada, Estado) VALUES (?, ?, ?, ?, ?)"
+            objCmd.Parameters.Append objCmd.CreateParameter("@id_proyecto", 3, 1, , idProyectoSel)
+            objCmd.Parameters.Append objCmd.CreateParameter("@fecha", 135, 1, , CDate(fechaRegistro))
+            objCmd.Parameters.Append objCmd.CreateParameter("@sintoma", 200, 1, 255, sintomaError)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@solucion", solucionAplicada, 255)
+            objCmd.Parameters.Append objCmd.CreateParameter("@estado", 200, 1, 20, estadoFallo)
         End If
 
-        objConn.Execute sql, , 129
+        objCmd.Execute , , 128
+        Set objCmd = Nothing
         CerrarConexion objConn
 
         Response.Redirect "listar.asp?ok=1"
@@ -73,14 +75,16 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
     End If
 End If
 
-' ===================================================================
-' CARGA DE DATOS EXISTENTES (modo edición, primer GET)
-' ===================================================================
 If modoEdicion And Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
     Set objConn = AbrirConexion()
-    sql = "SELECT ID_Fallo, ID_Proyecto, Fecha_Registro, Sintoma_Error, Solucion_Aplicada, Estado " & _
-          "FROM Bitacora_Fallos WHERE ID_Fallo = " & idFallo
-    Set objRS = objConn.Execute(sql)
+
+    Dim cmdFallo
+    Set cmdFallo = Server.CreateObject("ADODB.Command")
+    cmdFallo.ActiveConnection = objConn
+    cmdFallo.CommandType = 1
+    cmdFallo.CommandText = "SELECT ID_Fallo, ID_Proyecto, Fecha_Registro, Sintoma_Error, Solucion_Aplicada, Estado FROM Bitacora_Fallos WHERE ID_Fallo = ?"
+    cmdFallo.Parameters.Append cmdFallo.CreateParameter("@id", 3, 1, , idFallo)
+    Set objRS = cmdFallo.Execute
 
     If Not objRS.EOF Then
         idProyectoSel    = objRS("ID_Proyecto")
@@ -92,8 +96,10 @@ If modoEdicion And Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
         modoEdicion = False
         idFallo = 0
     End If
+
     objRS.Close
     Set objRS = Nothing
+    Set cmdFallo = Nothing
     CerrarConexion objConn
 End If
 
@@ -103,10 +109,17 @@ Else
     tituloPagina = "Nuevo fallo - Central de Monitoreo"
 End If
 
-' Recordset auxiliar para llenar el combo de proyectos disponibles
 Set objConn = AbrirConexion()
 sql = "SELECT ID_Proyecto, Nombre_Proyecto FROM Proyectos ORDER BY Nombre_Proyecto"
 Set objRS = objConn.Execute(sql)
+
+Function CrearTextoNull(ByRef cmd, ByVal nombre, ByVal valor, ByVal tamano)
+    If Limpiar(valor) = "" Then
+        Set CrearTextoNull = cmd.CreateParameter(nombre, 200, 1, tamano, Null)
+    Else
+        Set CrearTextoNull = cmd.CreateParameter(nombre, 200, 1, tamano, valor)
+    End If
+End Function
 %>
 <!--#include virtual="/includes/header.asp"-->
 
@@ -132,9 +145,7 @@ Set objRS = objConn.Execute(sql)
         <label for="id_proyecto">Proyecto *</label>
         <select id="id_proyecto" name="id_proyecto">
             <option value="">-- Seleccione un proyecto --</option>
-            <%
-            Do While Not objRS.EOF
-            %>
+            <% Do While Not objRS.EOF %>
             <option value="<%= objRS("ID_Proyecto") %>" <% If CLng(objRS("ID_Proyecto")) = CLng(idProyectoSel) Then %>selected<% End If %>>
                 <%= Server.HTMLEncode(objRS("Nombre_Proyecto")) %>
             </option>

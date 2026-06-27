@@ -205,3 +205,46 @@ footer.piefoot {
     font-size: 12.5px;
     padding: 30px 20px;
 }
+
+input[type="password"] {
+    width: 100%;
+    background: var(--fondo);
+    border: 1px solid var(--panel-borde);
+    color: var(--texto);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: var(--fuente-base);
+}
+
+button:disabled,
+input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.form-eliminar {
+    display: inline;
+    margin: 0;
+}
+
+.boton-enlace {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.boton-enlace:hover {
+    text-decoration: underline;
+}
+
+.form-busqueda {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}

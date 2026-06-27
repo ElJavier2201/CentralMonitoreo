@@ -1,20 +1,22 @@
+
 <%@ LANGUAGE="VBSCRIPT" CODEPAGE="65001"%>
 <%
 Option Explicit
 Response.CharSet = "UTF-8"
+
+Dim rutaBase, tituloPagina, seccionActiva
+rutaBase = "../"
+seccionActiva = "componentes"
 %>
+<!--#include virtual="/includes/auth.asp"-->
 <!--#include virtual="/conexion.asp"-->
 <%
 Dim objConn, objRS, sql
 Dim idComponente, modoEdicion
 Dim idProyectoSel, tipoComponente, valorCalculado, pinConexion, ubicacionProtoboard, notas
 Dim errores
-Dim rutaBase, tituloPagina, seccionActiva
 
-rutaBase = "../"
-seccionActiva = "componentes"
 errores = ""
-
 idComponente = IDValido(Request.QueryString("id"))
 modoEdicion = (idComponente > 0)
 
@@ -25,9 +27,6 @@ pinConexion          = ""
 ubicacionProtoboard  = ""
 notas                = ""
 
-' ===================================================================
-' PROCESAMIENTO DEL FORMULARIO (POST) - validación + SQL nativo
-' ===================================================================
 If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
 
     idComponente         = IDValido(Request.Form("id_componente"))
@@ -43,30 +42,34 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
     If tipoComponente = "" Then errores = errores & "<li>El tipo de componente es obligatorio.</li>"
 
     If errores = "" Then
-
         Set objConn = AbrirConexion()
 
+        Dim objCmd
+        Set objCmd = Server.CreateObject("ADODB.Command")
+        objCmd.ActiveConnection = objConn
+        objCmd.CommandType = 1
+
         If modoEdicion Then
-            sql = "UPDATE Componentes SET " & _
-                  "ID_Proyecto = " & idProyectoSel & ", " & _
-                  "Tipo_Componente = " & ValorTextoSQL(tipoComponente) & ", " & _
-                  "Valor_Calculado = " & ValorTextoSQL(valorCalculado) & ", " & _
-                  "Pin_Conexion = " & ValorTextoSQL(pinConexion) & ", " & _
-                  "Ubicacion_Protoboard = " & ValorTextoSQL(ubicacionProtoboard) & ", " & _
-                  "Notas = " & ValorTextoSQL(notas) & " " & _
-                  "WHERE ID_Componente = " & idComponente
+            objCmd.CommandText = "UPDATE Componentes SET ID_Proyecto = ?, Tipo_Componente = ?, Valor_Calculado = ?, Pin_Conexion = ?, Ubicacion_Protoboard = ?, Notas = ? WHERE ID_Componente = ?"
+            objCmd.Parameters.Append objCmd.CreateParameter("@id_proyecto", 3, 1, , idProyectoSel)
+            objCmd.Parameters.Append objCmd.CreateParameter("@tipo", 200, 1, 100, tipoComponente)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@valor", valorCalculado, 100)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@pin", pinConexion, 50)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@ubicacion", ubicacionProtoboard, 100)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@notas", notas, 255)
+            objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idComponente)
         Else
-            sql = "INSERT INTO Componentes " & _
-                  "(ID_Proyecto, Tipo_Componente, Valor_Calculado, Pin_Conexion, Ubicacion_Protoboard, Notas) " & _
-                  "VALUES (" & idProyectoSel & ", " & _
-                  ValorTextoSQL(tipoComponente) & ", " & _
-                  ValorTextoSQL(valorCalculado) & ", " & _
-                  ValorTextoSQL(pinConexion) & ", " & _
-                  ValorTextoSQL(ubicacionProtoboard) & ", " & _
-                  ValorTextoSQL(notas) & ")"
+            objCmd.CommandText = "INSERT INTO Componentes (ID_Proyecto, Tipo_Componente, Valor_Calculado, Pin_Conexion, Ubicacion_Protoboard, Notas) VALUES (?, ?, ?, ?, ?, ?)"
+            objCmd.Parameters.Append objCmd.CreateParameter("@id_proyecto", 3, 1, , idProyectoSel)
+            objCmd.Parameters.Append objCmd.CreateParameter("@tipo", 200, 1, 100, tipoComponente)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@valor", valorCalculado, 100)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@pin", pinConexion, 50)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@ubicacion", ubicacionProtoboard, 100)
+            objCmd.Parameters.Append CrearTextoNull(objCmd, "@notas", notas, 255)
         End If
 
-        objConn.Execute sql, , 129
+        objCmd.Execute , , 128
+        Set objCmd = Nothing
         CerrarConexion objConn
 
         Response.Redirect "listar.asp?ok=1"
@@ -74,14 +77,16 @@ If Request.ServerVariables("REQUEST_METHOD") = "POST" Then
     End If
 End If
 
-' ===================================================================
-' CARGA DE DATOS EXISTENTES (modo edición, primer GET)
-' ===================================================================
 If modoEdicion And Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
     Set objConn = AbrirConexion()
-    sql = "SELECT ID_Componente, ID_Proyecto, Tipo_Componente, Valor_Calculado, Pin_Conexion, " & _
-          "Ubicacion_Protoboard, Notas FROM Componentes WHERE ID_Componente = " & idComponente
-    Set objRS = objConn.Execute(sql)
+
+    Dim cmdComponente
+    Set cmdComponente = Server.CreateObject("ADODB.Command")
+    cmdComponente.ActiveConnection = objConn
+    cmdComponente.CommandType = 1
+    cmdComponente.CommandText = "SELECT ID_Componente, ID_Proyecto, Tipo_Componente, Valor_Calculado, Pin_Conexion, Ubicacion_Protoboard, Notas FROM Componentes WHERE ID_Componente = ?"
+    cmdComponente.Parameters.Append cmdComponente.CreateParameter("@id", 3, 1, , idComponente)
+    Set objRS = cmdComponente.Execute
 
     If Not objRS.EOF Then
         idProyectoSel       = objRS("ID_Proyecto")
@@ -94,8 +99,10 @@ If modoEdicion And Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
         modoEdicion = False
         idComponente = 0
     End If
+
     objRS.Close
     Set objRS = Nothing
+    Set cmdComponente = Nothing
     CerrarConexion objConn
 End If
 
@@ -105,10 +112,17 @@ Else
     tituloPagina = "Nuevo componente - Central de Monitoreo"
 End If
 
-' Recordset auxiliar para llenar el combo de proyectos disponibles
 Set objConn = AbrirConexion()
 sql = "SELECT ID_Proyecto, Nombre_Proyecto FROM Proyectos ORDER BY Nombre_Proyecto"
 Set objRS = objConn.Execute(sql)
+
+Function CrearTextoNull(ByRef cmd, ByVal nombre, ByVal valor, ByVal tamano)
+    If Limpiar(valor) = "" Then
+        Set CrearTextoNull = cmd.CreateParameter(nombre, 200, 1, tamano, Null)
+    Else
+        Set CrearTextoNull = cmd.CreateParameter(nombre, 200, 1, tamano, valor)
+    End If
+End Function
 %>
 <!--#include virtual="/includes/header.asp"-->
 
@@ -134,9 +148,7 @@ Set objRS = objConn.Execute(sql)
         <label for="id_proyecto">Proyecto *</label>
         <select id="id_proyecto" name="id_proyecto">
             <option value="">-- Seleccione un proyecto --</option>
-            <%
-            Do While Not objRS.EOF
-            %>
+            <% Do While Not objRS.EOF %>
             <option value="<%= objRS("ID_Proyecto") %>" <% If CLng(objRS("ID_Proyecto")) = CLng(idProyectoSel) Then %>selected<% End If %>>
                 <%= Server.HTMLEncode(objRS("Nombre_Proyecto")) %>
             </option>

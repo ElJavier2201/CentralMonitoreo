@@ -2,19 +2,51 @@
 <%
 Option Explicit
 Response.CharSet = "UTF-8"
+
+Dim rutaBase
+rutaBase = "../"
 %>
+<!--#include virtual="/includes/auth.asp"-->
 <!--#include virtual="/conexion.asp"-->
 <%
-Dim idFallo, objConn, sql
+Dim idFallo, objConn, objCmd, exitoBorrado
+exitoBorrado = False
 
-idFallo = IDValido(Request.QueryString("id"))
+If Request.ServerVariables("REQUEST_METHOD") <> "POST" Then
+    Response.Redirect "listar.asp"
+    Response.End
+End If
+
+idFallo = IDValido(Request.Form("id_fallo"))
 
 If idFallo > 0 Then
     Set objConn = AbrirConexion()
-    sql = "DELETE FROM Bitacora_Fallos WHERE ID_Fallo = " & idFallo
-    objConn.Execute sql, , 129
+
+    On Error Resume Next
+    Set objCmd = Server.CreateObject("ADODB.Command")
+    objCmd.ActiveConnection = objConn
+    objCmd.CommandType = 1
+    objCmd.CommandText = "DELETE FROM Bitacora_Fallos WHERE ID_Fallo = ?"
+    objCmd.Parameters.Append objCmd.CreateParameter("@id", 3, 1, , idFallo)
+    objCmd.Execute , , 128
+
+    If Err.Number = 0 Then
+        exitoBorrado = True
+    Else
+        Err.Clear
+    End If
+    On Error Goto 0
+
+    Set objCmd = Nothing
     CerrarConexion objConn
 End If
 
-Response.Redirect "listar.asp?eliminado=1"
+If exitoBorrado Then
+    Response.Redirect "listar.asp?eliminado=1"
+ElseIf idFallo > 0 Then
+    Response.Redirect "listar.asp?error=borrado_fallido"
+Else
+    Response.Redirect "listar.asp"
+End If
 %>
+

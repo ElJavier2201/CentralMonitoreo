@@ -2,42 +2,50 @@
 <%
 Option Explicit
 Response.CharSet = "UTF-8"
-%>
-<!--#include virtual="/conexion.asp"-->
-<%
-Dim objConn, objRS, sql
-Dim rutaBase, tituloPagina, seccionActiva
-Dim filtroProyecto, nombreProyectoFiltro
-Dim claseEstado
 
+Dim rutaBase, tituloPagina, seccionActiva
 rutaBase = "../"
 seccionActiva = "fallos"
-tituloPagina = "Bitácora de Fallos - Central de Monitoreo"
+tituloPagina = "Bitacora de Fallos - Central de Monitoreo"
+%>
+<!--#include virtual="/includes/auth.asp"-->
+<!--#include virtual="/conexion.asp"-->
+<%
+Dim objConn, objRS, objCmd, sql
+Dim filtroProyecto, nombreProyectoFiltro, claseEstado
 
 filtroProyecto = IDValido(Request.QueryString("proyecto"))
 nombreProyectoFiltro = ""
 
 Set objConn = AbrirConexion()
+Set objCmd = Server.CreateObject("ADODB.Command")
+objCmd.ActiveConnection = objConn
+objCmd.CommandType = 1
 
-' --- Cruce de tablas obligatorio: Bitacora_Fallos INNER JOIN Proyectos ---
 sql = "SELECT f.ID_Fallo, f.Sintoma_Error, f.Solucion_Aplicada, f.Estado, f.Fecha_Registro, " & _
       "p.ID_Proyecto, p.Nombre_Proyecto " & _
       "FROM Bitacora_Fallos f INNER JOIN Proyectos p ON f.ID_Proyecto = p.ID_Proyecto "
 
 If filtroProyecto > 0 Then
-    sql = sql & "WHERE p.ID_Proyecto = " & filtroProyecto & " "
+    sql = sql & "WHERE p.ID_Proyecto = ? "
+    objCmd.Parameters.Append objCmd.CreateParameter("@proyecto", 3, 1, , filtroProyecto)
 End If
 
-sql = sql & "ORDER BY f.Fecha_Registro DESC, f.ID_Fallo DESC"
-
-Set objRS = objConn.Execute(sql)
+objCmd.CommandText = sql & "ORDER BY f.Fecha_Registro DESC, f.ID_Fallo DESC"
+Set objRS = objCmd.Execute
 
 If filtroProyecto > 0 Then
-    Dim objRSNombre
-    Set objRSNombre = objConn.Execute("SELECT Nombre_Proyecto FROM Proyectos WHERE ID_Proyecto = " & filtroProyecto)
+    Dim objRSNombre, cmdNombre
+    Set cmdNombre = Server.CreateObject("ADODB.Command")
+    cmdNombre.ActiveConnection = objConn
+    cmdNombre.CommandType = 1
+    cmdNombre.CommandText = "SELECT Nombre_Proyecto FROM Proyectos WHERE ID_Proyecto = ?"
+    cmdNombre.Parameters.Append cmdNombre.CreateParameter("@id", 3, 1, , filtroProyecto)
+    Set objRSNombre = cmdNombre.Execute
     If Not objRSNombre.EOF Then nombreProyectoFiltro = objRSNombre("Nombre_Proyecto")
     objRSNombre.Close
     Set objRSNombre = Nothing
+    Set cmdNombre = Nothing
 End If
 %>
 <!--#include virtual="/includes/header.asp"-->
@@ -61,6 +69,9 @@ End If
     <% If Request.QueryString("eliminado") = "1" Then %>
         <div class="alerta alerta-ok">Registro eliminado correctamente.</div>
     <% End If %>
+    <% If Request.QueryString("error") = "borrado_fallido" Then %>
+        <div class="alerta alerta-error">No se pudo eliminar el registro.</div>
+    <% End If %>
 
     <table class="tabla-datos">
         <thead>
@@ -74,14 +85,10 @@ End If
         </tr>
         </thead>
         <tbody>
-        <%
-        If objRS.EOF Then
-        %>
+        <% If objRS.EOF Then %>
         <tr><td colspan="6" class="vacio">No hay fallos registrados todavía.</td></tr>
-        <%
-        Else
+        <% Else
             Do While Not objRS.EOF
-
                 If Limpiar(objRS("Estado")) = "Resuelto" Then
                     claseEstado = "estado-resuelto"
                 Else
@@ -96,8 +103,10 @@ End If
             <td class="<%= claseEstado %>"><%= Server.HTMLEncode(objRS("Estado")) %></td>
             <td class="acciones-fila">
                 <a href="formulario.asp?id=<%= objRS("ID_Fallo") %>">Editar</a>
-                <a href="eliminar.asp?id=<%= objRS("ID_Fallo") %>" class="enlace-peligro"
-                   onclick="return confirm('¿Eliminar este registro de la bitácora?');">Eliminar</a>
+                <form method="post" action="eliminar.asp" class="form-eliminar" onsubmit="return confirm('¿Eliminar este registro de la bitácora?');">
+                    <input type="hidden" name="id_fallo" value="<%= objRS("ID_Fallo") %>">
+                    <button type="submit" class="boton-enlace enlace-peligro">Eliminar</button>
+                </form>
             </td>
         </tr>
         <%
@@ -113,5 +122,6 @@ End If
 <%
 objRS.Close
 Set objRS = Nothing
+Set objCmd = Nothing
 CerrarConexion objConn
 %>

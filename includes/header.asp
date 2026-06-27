@@ -1,3 +1,4 @@
+
 <%
 Dim titulo, seccion
 If tituloPagina = "" Then
@@ -9,13 +10,6 @@ If seccionActiva = "" Then
     seccion = ""
 Else
     seccion = seccionActiva
-End If
-
-If Session("Autenticado") <> True Then
-    ' Usamos rutaBase para que redirija bien sin importar 
-    ' si estamos en la raíz o dentro de /proyectos/
-    Response.Redirect rutaBase & "login.asp"
-    Response.End
 End If
 %>
 <!DOCTYPE html>
