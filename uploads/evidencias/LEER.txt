@@ -1,0 +1,3 @@
+Carpeta para guardar imágenes de evidencias.
+
+En IIS, asegúrate de que el usuario del sitio (IUSR / IIS_IUSRS) tenga permiso de escritura sobre esta carpeta.

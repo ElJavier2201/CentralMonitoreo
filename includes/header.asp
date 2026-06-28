@@ -40,6 +40,9 @@ End If
         <a href="<%= rutaBase %>busqueda/index.asp" class="<%= ClaseSiActivo(seccion, "busqueda") %>">Buscar</a>
         <a href="<%= rutaBase %>herramientas/formulas.asp" class="<%= ClaseSiActivo(seccion, "herramientas") %>">Herramientas</a>
         <a href="<%= rutaBase %>reportes/index.asp" class="<%= ClaseSiActivo(seccion, "reportes") %>">Reportes</a>
+        <a href="<%= rutaBase %>calculos/listar.asp" class="<%= ClaseSiActivo(seccion, "calculos") %>">Cálculos</a>
+        <a href="<%= rutaBase %>catalogo_errores/listar.asp" class="<%= ClaseSiActivo(seccion, "catalogo_errores") %>">Errores frecuentes</a>
+        <a href="<%= rutaBase %>ayuda/index.asp" class="<%= ClaseSiActivo(seccion, "ayuda") %>">Ayuda</a>
         <a href="<%= rutaBase %>logout.asp" style="color: var(--alerta); margin-left: 15px;">Salir</a>
     </nav>
 </header>
