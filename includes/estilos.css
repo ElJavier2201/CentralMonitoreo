@@ -206,6 +206,9 @@ footer.piefoot {
     padding: 30px 20px;
 }
 
+
+/* ----- Ajustes agregados para seguridad/formularios POST ----- */
+
 input[type="password"] {
     width: 100%;
     background: var(--fondo);
@@ -247,4 +250,96 @@ input:disabled {
     gap: 10px;
     margin-bottom: 20px;
     align-items: center;
+}
+
+.form-eliminar { display: inline; margin: 0; }
+.boton-enlace {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0 12px 0 0;
+    color: var(--acento);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.boton-enlace:hover { text-decoration: underline; }
+.boton-enlace.enlace-peligro { color: var(--alerta) !important; }
+.acciones-apiladas { min-width: 220px; }
+.barra-filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin: 14px 0 18px; }
+.barra-filtros select, .barra-filtros input { max-width: 260px; }
+.estado-proyecto {
+    display: inline-block;
+    border: 1px solid var(--panel-borde);
+    background: rgba(142, 160, 189, 0.12);
+    color: var(--texto);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+.dashboard-graficas {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+.grafica-card {
+    min-width: 260px;
+    align-items: center;
+    justify-content: center;
+}
+.grafica-card canvas {
+    max-width: 220px;
+    max-height: 220px;
+}
+.checkline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--texto);
+}
+.checkline input[type="checkbox"] { width: auto; }
+input[type="password"] {
+    width: 100%;
+    background: var(--fondo);
+    border: 1px solid var(--panel-borde);
+    color: var(--texto);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: var(--fuente-base);
+}
+input[type="password"]:focus { outline: none; border-color: var(--acento); }
+@media (max-width: 800px) {
+    .tabla-datos { font-size: 12px; }
+    .acciones-apiladas { min-width: 160px; }
+    .topbar { align-items: flex-start; }
+}
+
+/* === Mejoras: buscador global, reportes y calculadora === */
+.formulario-linea {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+.formulario-linea input[type="text"] {
+    flex: 1;
+    min-width: 260px;
+}
+.grid-formulas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.boton-mini {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+@media print {
+    .topbar, .piefoot, .acciones, .no-imprimir { display: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .panel { border: none !important; background: #fff !important; }
 }

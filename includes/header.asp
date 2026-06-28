@@ -34,6 +34,12 @@ End If
         <a href="<%= rutaBase %>proyectos/listar.asp" class="<%= ClaseSiActivo(seccion, "proyectos") %>">Proyectos</a>
         <a href="<%= rutaBase %>componentes/listar.asp" class="<%= ClaseSiActivo(seccion, "componentes") %>">Componentes</a>
         <a href="<%= rutaBase %>fallos/listar.asp" class="<%= ClaseSiActivo(seccion, "fallos") %>">Bitácora de Fallos</a>
+        <a href="<%= rutaBase %>mediciones/listar.asp" class="<%= ClaseSiActivo(seccion, "mediciones") %>">Mediciones</a>
+        <a href="<%= rutaBase %>checklist/listar.asp" class="<%= ClaseSiActivo(seccion, "checklist") %>">Checklist</a>
+        <a href="<%= rutaBase %>evidencias/listar.asp" class="<%= ClaseSiActivo(seccion, "evidencias") %>">Evidencias</a>
+        <a href="<%= rutaBase %>busqueda/index.asp" class="<%= ClaseSiActivo(seccion, "busqueda") %>">Buscar</a>
+        <a href="<%= rutaBase %>herramientas/formulas.asp" class="<%= ClaseSiActivo(seccion, "herramientas") %>">Herramientas</a>
+        <a href="<%= rutaBase %>reportes/index.asp" class="<%= ClaseSiActivo(seccion, "reportes") %>">Reportes</a>
         <a href="<%= rutaBase %>logout.asp" style="color: var(--alerta); margin-left: 15px;">Salir</a>
     </nav>
 </header>
